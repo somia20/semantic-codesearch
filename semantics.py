@@ -95,7 +95,7 @@ def generate_embeddings(structures: List[Dict[str, Any]]) -> tuple:
     nlp_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     code_model = SentenceTransformer("jinaai/jina-embeddings-v2-base-code")
 
-    batch_size = 4  # Reduced from 32 to 4
+    batch_size = 4  
     nlp_embeddings = nlp_model.encode(
         text_representations,
         batch_size=batch_size,
@@ -211,5 +211,5 @@ if __name__ == "__main__":
     client, collection_name = store_in_qdrant(structures, nlp_embeddings, code_embeddings)
 
     # Test with some queries
-    search_codebase(client, collection_name, "How do I extract a plan from messages?", nlp_model, code_model)
+    search_codebase(client, collection_name, "how to classify message?", nlp_model, code_model)
     # search_codebase(client, collection_name, "def process_data(data):\n    return data * 2", nlp_model, code_model)
