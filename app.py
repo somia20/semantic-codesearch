@@ -8,6 +8,8 @@ from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient, models
 from tqdm import tqdm
 import torch
+import streamlit as st
+import pandas as pd
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -56,7 +58,7 @@ def parse_python_file(file_path: str) -> List[Dict[str, Any]]:
 
 def parse_codebase(project_root: str) -> List[Dict[str, Any]]:
     structures = []
-    folders_to_skip = {"tests", "docs", "migrations"}  # Adjust based on your project
+    folders_to_skip = {"tests", "docs", "migrations"}
     files_to_skip = {"__init__.py", "setup.py"}
 
     for folder in os.listdir(project_root):
@@ -88,14 +90,13 @@ def textify(chunk: Dict[str, Any]) -> str:
 
 # Step 4: Generate embeddings
 def generate_embeddings(structures: List[Dict[str, Any]]) -> tuple:
-    """Generate text and code embeddings for all chunks."""
     text_representations = list(map(textify, structures))
     logger.info(f"Generated {len(text_representations)} text representations")
 
     nlp_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     code_model = SentenceTransformer("jinaai/jina-embeddings-v2-base-code")
 
-    batch_size = 4  
+    batch_size = 4
     nlp_embeddings = nlp_model.encode(
         text_representations,
         batch_size=batch_size,
@@ -112,7 +113,6 @@ def generate_embeddings(structures: List[Dict[str, Any]]) -> tuple:
     )
 
     return nlp_embeddings, code_embeddings, nlp_model, code_model
-
 
 # Step 5: Store in Qdrant
 def store_in_qdrant(structures: List[Dict[str, Any]], nlp_embeddings, code_embeddings):
@@ -152,7 +152,7 @@ def store_in_qdrant(structures: List[Dict[str, Any]], nlp_embeddings, code_embed
     logger.info(f"Total points in collection: {client.count(COLLECTION_NAME).count}")
     return client, COLLECTION_NAME
 
-# Step 6: Query the codebase
+# Step 6: Search function
 def search_codebase(client, collection_name: str, query: str, nlp_model, code_model, limit: int = 5):
     query_text_embedding = nlp_model.encode([query])[0]
     text_hits = client.query_points(
@@ -162,12 +162,6 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
         limit=limit
     ).points
 
-    print("Results from text embeddings:")
-    for hit in text_hits:
-        payload = hit.payload
-        print(f"Score: {hit.score:.3f}, Module: {payload['context']['module']}, File: {payload['context']['file_path']}")
-        print(f"Signature: {payload['signature']}\n")
-
     query_code_embedding = code_model.encode([query])[0]
     code_hits = client.query_points(
         collection_name,
@@ -175,12 +169,6 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
         using="code",
         limit=limit
     ).points
-
-    print("Results from code embeddings:")
-    for hit in code_hits:
-        payload = hit.payload
-        print(f"Score: {hit.score:.3f}, Module: {payload['context']['module']}, File: {payload['context']['file_path']}")
-        print(f"Signature: {payload['signature']}\n")
 
     fused_hits = client.query_points(
         collection_name=collection_name,
@@ -192,26 +180,79 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
         limit=limit
     ).points
 
-    print("Fused results:")
-    for hit in fused_hits:
-        payload = hit.payload
-        print(f"Score: {hit.score:.3f}, Module: {payload['context']['module']}, File: {payload['context']['file_path']}")
-        print(f"Signature: {payload['signature']}\n")
+    text_results = [
+        {"Score": hit.score, "Module": hit.payload["context"]["module"], 
+         "File Path": hit.payload["context"]["file_path"], "Signature": hit.payload["signature"]}
+        for hit in text_hits
+    ]
+    code_results = [
+        {"Score": hit.score, "Module": hit.payload["context"]["module"], 
+         "File Path": hit.payload["context"]["file_path"], "Signature": hit.payload["signature"]}
+        for hit in code_hits
+    ]
+    fused_results = [
+        {"Score": hit.score, "Module": hit.payload["context"]["module"], 
+         "File Path": hit.payload["context"]["file_path"], "Signature": hit.payload["signature"]}
+        for hit in fused_hits
+    ]
 
-# Step 7: Main execution
+    return text_results, code_results, fused_results
+
+# Streamlit Interface
+def main():
+    st.title("Code Search with Vector Embeddings")
+
+    # Initialize session state for client and models
+    if "client" not in st.session_state:
+        project_root = "C:/Users/somia.kumari/botpress/upc"  # Replace with your project path
+        structures = parse_codebase(project_root)
+        
+        # Generate embeddings
+        nlp_embeddings, code_embeddings, nlp_model, code_model = generate_embeddings(structures)
+        
+        # Store in Qdrant
+        client, collection_name = store_in_qdrant(structures, nlp_embeddings, code_embeddings)
+        
+        # Store in session state
+        st.session_state["client"] = client
+        st.session_state["collection_name"] = collection_name
+        st.session_state["nlp_model"] = nlp_model
+        st.session_state["code_model"] = code_model
+        st.success("Codebase indexed successfully!")
+
+    # Input query
+    query = st.text_input("Enter your search query", "how to classify message?")
+    limit = st.slider("Number of results", 1, 10, 5)
+
+    if st.button("Search"):
+        with st.spinner("Searching..."):
+            text_results, code_results, fused_results = search_codebase(
+                st.session_state["client"],
+                st.session_state["collection_name"],
+                query,
+                st.session_state["nlp_model"],
+                st.session_state["code_model"],
+                limit
+            )
+
+            # Display results
+            st.subheader("Text Embeddings Results")
+            if text_results:
+                st.dataframe(pd.DataFrame(text_results))
+            else:
+                st.write("No results found.")
+
+            st.subheader("Code Embeddings Results")
+            if code_results:
+                st.dataframe(pd.DataFrame(code_results))
+            else:
+                st.write("No results found.")
+
+            st.subheader("Fused Results")
+            if fused_results:
+                st.dataframe(pd.DataFrame(fused_results))
+            else:
+                st.write("No results found.")
+
 if __name__ == "__main__":
-    # Replace with your project path
-    project_root = "C:/Users/somia.kumari/botpress/upc" # e.g., "/home/user/my_project"
-    structures = parse_codebase(project_root)
-
-    # Generate embeddings
-    nlp_embeddings, code_embeddings, nlp_model, code_model = generate_embeddings(structures)
-
-    # Store in Qdrant
-    client, collection_name = store_in_qdrant(structures, nlp_embeddings, code_embeddings)
-
-    # Test with some queries
-    search_codebase(client, collection_name, "how to classify message?", nlp_model, code_model)
-    # search_codebase(client, collection_name, "def process_data(data):\n    return data * 2", nlp_model, code_model)
-
-    
+    main()
