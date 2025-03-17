@@ -204,7 +204,7 @@ def main():
 
     # Initialize session state for client and models
     if "client" not in st.session_state:
-        project_root = "C:/Users/somia.kumari/botpress/upc"  # Replace with your project path
+        project_root = "C:/Users/somia.kumari/botpress/up"  # Replace with your project path
         structures = parse_codebase(project_root)
         
         # Generate embeddings
