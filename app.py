@@ -200,7 +200,7 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
 
 # Streamlit Interface
 def main():
-    st.title("Code Search with Vector Embedding")
+    st.title("Code Search with Vector Embeddings")
 
     # Initialize session state for client and models
     if "client" not in st.session_state:
