@@ -242,7 +242,7 @@ def main():
             else:
                 st.write("No results found.")
 
-            st.subheader("Code Embeddings Results")
+            st.subheader("Code Embeddings Result")
             if code_results:
                 st.dataframe(pd.DataFrame(code_results))
             else:
