@@ -246,7 +246,7 @@ def main():
             if code_results:
                 st.dataframe(pd.DataFrame(code_results))
             else:
-                st.write("No results found")
+                st.write("No results found.")
 
             st.subheader("Fused Results")
             if fused_results:
