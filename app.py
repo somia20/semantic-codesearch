@@ -252,7 +252,7 @@ def main():
             if fused_results:
                 st.dataframe(pd.DataFrame(fused_results))
             else:
-                st.write("No results found.")
+                st.write("N results found.")
 
 if __name__ == "__main__":
     main()
