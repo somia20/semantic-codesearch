@@ -240,7 +240,7 @@ def main():
             if text_results:
                 st.dataframe(pd.DataFrame(text_results))
             else:
-                st.write("N results found.")
+                st.write("No results found.")
 
             st.subheader("Code Embeddings Results")
             if code_results:
