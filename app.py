@@ -221,7 +221,7 @@ def main():
         st.success("Codebase indexed successfully!")
 
     # Input query
-    query = st.text_input("Enter your search query", "how to classify message")
+    query = st.text_input("Enter your search query", "how to classify message?")
     limit = st.slider("Number of results", 1, 10, 5)
 
     if st.button("Search"):
