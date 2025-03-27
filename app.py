@@ -248,7 +248,7 @@ def main():
             else:
                 st.write("No results found.")
 
-            st.subheader("Fused Results")
+            st.subheader("Fused Results.")
             if fused_results:
                 st.dataframe(pd.DataFrame(fused_results))
             else:
