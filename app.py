@@ -236,7 +236,7 @@ def main():
             )
 
             # Display results
-            st.subheader("Text Embeddings Results.")
+            st.subheader("Text Embeddings Results")
             if text_results:
                 st.dataframe(pd.DataFrame(text_results))
             else:
