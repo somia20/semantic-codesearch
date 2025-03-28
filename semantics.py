@@ -195,7 +195,7 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
     print("Fused results:")
     for hit in fused_hits:
         payload = hit.payload
-        print(f"Score: {hit.score:.3f}, Modul: {payload['context']['module']}, File: {payload['context']['file_path']}")
+        print(f"Score: {hit.score:.3f}, Module: {payload['context']['module']}, File: {payload['context']['file_path']}")
         print(f"Signature: {payload['signature']}\n")
 
 # Step 7: Main execution
