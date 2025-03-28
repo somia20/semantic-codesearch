@@ -176,7 +176,7 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
         limit=limit
     ).points
 
-    print("Result from code embeddings:")
+    print("Results from code embeddings:")
     for hit in code_hits:
         payload = hit.payload
         print(f"Score: {hit.score:.3f}, Module: {payload['context']['module']}, File: {payload['context']['file_path']}")
