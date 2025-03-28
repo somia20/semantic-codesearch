@@ -201,7 +201,7 @@ def search_codebase(client, collection_name: str, query: str, nlp_model, code_mo
 # Step 7: Main execution
 if __name__ == "__main__":
     # Replace with your project path
-    project_root = "C:/Users/somia.kumari/botpress/up" # e.g., "/home/user/my_project"
+    project_root = "C:/Users/somia.kumari/botpress/upc" # e.g., "/home/user/my_project"
     structures = parse_codebase(project_root)
 
     # Generate embeddings
